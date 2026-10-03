@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 import NumberPickerModal from "../components/NumberPickerModal";
@@ -21,13 +22,26 @@ export default function WorkoutScreen() {
 
   const repValues = Array.from({ length: 50 }, (_, i) => i + 1);
 
-  function addSet() {
+  useEffect(() => {
+    async function loadSets() {
+      const savedSets = await AsyncStorage.getItem("workoutSets");
+
+      if (savedSets !== null) {
+        setSets(JSON.parse(savedSets));
+      }
+    }
+    loadSets();
+  }, []);
+
+  async function addSet() {
     if (editingSetId !== null) {
-      setSets(
-        sets.map((set) =>
-          set.id === editingSetId ? { ...set, weight, reps } : set,
-        ),
+      const updatedSets = sets.map((set) =>
+        set.id === editingSetId ? { ...set, weight, reps } : set,
       );
+
+      setSets(updatedSets);
+
+      await AsyncStorage.setItem("workoutSets", JSON.stringify(updatedSets));
 
       setEditingSetId(null);
       return;
@@ -39,21 +53,25 @@ export default function WorkoutScreen() {
       reps,
     };
 
-    setSets([...sets, newSet]);
-  }
+    const updatedSets = [...sets, newSet];
 
-  function deleteSet(id: string) {
-    setSets(sets.filter((set) => set.id !== id));
+    setSets(updatedSets);
 
-    if (editingSetId === id) {
-      setEditingSetId(null);
-    }
+    await AsyncStorage.setItem("workoutSets", JSON.stringify(updatedSets));
   }
 
   function editSet(set: WorkoutSet) {
     setWeight(set.weight);
     setReps(set.reps);
     setEditingSetId(set.id);
+  }
+
+  async function deleteSet(id: string) {
+    const updatedSets = sets.filter((set) => set.id !== id);
+
+    setSets(updatedSets);
+
+    await AsyncStorage.setItem("workoutSets", JSON.stringify(updatedSets));
   }
 
   const totalVolume = sets.reduce((total, set) => {
