@@ -27,6 +27,18 @@ export default function RootLayout() {
           title: "Workout",
         }}
       />
+      <Stack.Screen
+        name="history"
+        options={{
+          title: "Workout History",
+        }}
+      />
+      <Stack.Screen
+        name="exercise-picker"
+        options={{
+          title: "Choose Exercise",
+        }}
+      />
     </Stack>
   );
 }

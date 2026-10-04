@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router, useFocusEffect } from "expo-router";
 import {
   Alert,
   Pressable,
@@ -19,7 +20,7 @@ import { WorkoutSet } from "../types/WorkoutSet";
 export default function WorkoutScreen() {
   const [weight, setWeight] = useState("185");
   const [reps, setReps] = useState("8");
-  const [exercise, setExercise] = useState("Bench Press");
+  const [exercise, setExercise] = useState("");
 
   const [showWeightPicker, setShowWeightPicker] = useState(false);
   const [showRepsPicker, setShowRepsPicker] = useState(false);
@@ -39,8 +40,6 @@ export default function WorkoutScreen() {
   const weightValues = Array.from({ length: 81 }, (_, i) => (i + 1) * 5);
   const repValues = Array.from({ length: 50 }, (_, i) => i + 1);
 
-  const exercises = ["Bench Press", "Squat", "Deadlift"];
-
   const currentExercise = workoutExercises.find(
     (item) => item.name === exercise,
   );
@@ -59,7 +58,34 @@ export default function WorkoutScreen() {
     loadWorkout();
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      async function loadSelectedExercise() {
+        const selectedExercise = await AsyncStorage.getItem("selectedExercise");
+
+        if (selectedExercise !== null) {
+          setExercise(selectedExercise);
+
+          setEditingSetId(null);
+          setEditingExerciseName(null);
+
+          await AsyncStorage.removeItem("selectedExercise");
+        }
+      }
+
+      loadSelectedExercise();
+    }, []),
+  );
+
   async function addSet() {
+    if (!exercise) {
+      Alert.alert(
+        "Choose an exercise",
+        "Select an exercise before adding a set.",
+      );
+      return;
+    }
+
     const newSet: WorkoutSet = {
       id: Date.now().toString(),
       weight,
@@ -68,7 +94,6 @@ export default function WorkoutScreen() {
 
     let updatedExercises: WorkoutExercise[];
 
-    // EDITING AN EXISTING SET
     if (editingSetId !== null && editingExerciseName !== null) {
       updatedExercises = workoutExercises.map((item) => {
         if (item.name !== editingExerciseName) {
@@ -91,10 +116,7 @@ export default function WorkoutScreen() {
 
       setEditingSetId(null);
       setEditingExerciseName(null);
-    }
-
-    // ADDING A NEW SET
-    else {
+    } else {
       const exerciseAlreadyExists = workoutExercises.some(
         (item) => item.name === exercise,
       );
@@ -143,16 +165,18 @@ export default function WorkoutScreen() {
   }
 
   async function deleteSet(id: string, exerciseName: string) {
-    const updatedExercises = workoutExercises.map((item) => {
-      if (item.name !== exerciseName) {
-        return item;
-      }
+    const updatedExercises = workoutExercises
+      .map((item) => {
+        if (item.name !== exerciseName) {
+          return item;
+        }
 
-      return {
-        ...item,
-        sets: item.sets.filter((set) => set.id !== id),
-      };
-    });
+        return {
+          ...item,
+          sets: item.sets.filter((set) => set.id !== id),
+        };
+      })
+      .filter((item) => item.sets.length > 0);
 
     setWorkoutExercises(updatedExercises);
 
@@ -160,6 +184,18 @@ export default function WorkoutScreen() {
       "currentWorkout",
       JSON.stringify(updatedExercises),
     );
+
+    const exerciseStillExists = updatedExercises.some(
+      (item) => item.name === exerciseName,
+    );
+
+    if (!exerciseStillExists) {
+      setExpandedExercise(null);
+
+      if (exercise === exerciseName) {
+        setExercise("");
+      }
+    }
   }
 
   async function savefinishWorkout() {
@@ -173,7 +209,7 @@ export default function WorkoutScreen() {
       exercises: workoutExercises,
     };
 
-    const savedHistory = await AsyncStorage.getItem("wokoutHistory");
+    const savedHistory = await AsyncStorage.getItem("workoutHistory");
 
     const workoutHistory: Workout[] =
       savedHistory !== null ? JSON.parse(savedHistory) : [];
@@ -191,13 +227,14 @@ export default function WorkoutScreen() {
     setEditingSetId(null);
     setEditingExerciseName(null);
     setExpandedExercise(null);
+    setExercise("");
   }
 
   function finishWorkout() {
     if (workoutExercises.length === 0) {
       Alert.alert(
         "No workout yet",
-        "Add atleast one set before finishing your workout.",
+        "Add at least one set before finishing your workout.",
       );
       return;
     }
@@ -241,23 +278,14 @@ export default function WorkoutScreen() {
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
     >
-      <View style={styles.exerciseRow}>
-        {exercises.map((item) => (
-          <Pressable
-            key={item}
-            style={styles.exerciseButton}
-            onPress={() => {
-              setExercise(item);
-              setEditingSetId(null);
-              setEditingExerciseName(null);
-            }}
-          >
-            <Text style={styles.exerciseButtonText}>{item}</Text>
-          </Pressable>
-        ))}
-      </View>
+      <Pressable
+        style={styles.addExerciseButton}
+        onPress={() => router.push("/exercise-picker")}
+      >
+        <Text style={styles.addExerciseButtonText}>Add Exercise</Text>
+      </Pressable>
 
-      <Text style={styles.title}>{exercise}</Text>
+      <Text style={styles.title}>{exercise || "Choose an Exercise"}</Text>
 
       <Text style={styles.label}>Weight</Text>
 
@@ -284,7 +312,7 @@ export default function WorkoutScreen() {
       </Pressable>
 
       <Text style={styles.volume}>
-        {exercise} Volume: {exerciseVolume} lb
+        {exercise ? `${exercise} Volume: ${exerciseVolume} lb` : ""}
       </Text>
 
       <Text style={styles.volume}>Workout Volume: {totalWorkoutVolume} lb</Text>
@@ -303,9 +331,13 @@ export default function WorkoutScreen() {
           >
             <Pressable
               style={styles.exerciseHeader}
-              onPress={() =>
-                setExpandedExercise(isExpanded ? null : workoutExercise.name)
-              }
+              onPress={() => {
+                setExpandedExercise(isExpanded ? null : workoutExercise.name);
+
+                setExercise(workoutExercise.name);
+                setEditingSetId(null);
+                setEditingExerciseName(null);
+              }}
             >
               <Text style={styles.exerciseTitle}>{workoutExercise.name}</Text>
 
@@ -359,20 +391,18 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
 
-  exerciseRow: {
-    flexDirection: "row",
-    gap: 10,
+  addExerciseButton: {
+    backgroundColor: "#333",
+    padding: 14,
+    borderRadius: 10,
+    alignItems: "center",
     marginBottom: 20,
   },
 
-  exerciseButton: {
-    backgroundColor: "#222",
-    padding: 10,
-    borderRadius: 8,
-  },
-
-  exerciseButtonText: {
+  addExerciseButtonText: {
     color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 
   title: {
@@ -443,6 +473,7 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 18,
   },
+
   finishButton: {
     backgroundColor: "#35c759",
     padding: 16,

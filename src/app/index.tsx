@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, Pressable } from "react-native";
 import { router } from "expo-router";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export default function HomeScreen() {
   return (
@@ -20,6 +20,13 @@ export default function HomeScreen() {
 
       <Pressable style={styles.button} onPress={() => router.push("/workout")}>
         <Text style={styles.buttonText}>Start Workout</Text>
+      </Pressable>
+
+      <Pressable
+        style={styles.historyButton}
+        onPress={() => router.push("/history")}
+      >
+        <Text style={styles.historyButtonText}>Workout History</Text>
       </Pressable>
     </View>
   );
@@ -81,6 +88,19 @@ const styles = StyleSheet.create({
 
   buttonText: {
     color: "#111",
+    fontWeight: "bold",
+    fontSize: 17,
+  },
+  historyButton: {
+    backgroundColor: "#222",
+    padding: 18,
+    borderRadius: 12,
+    marginTop: 12,
+    alignItems: "center",
+  },
+
+  historyButtonText: {
+    color: "white",
     fontWeight: "bold",
     fontSize: 17,
   },
