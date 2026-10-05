@@ -71,6 +71,19 @@ export default function HistoryScreen() {
     );
   }
 
+  function formatDuration(totalSeconds: number) {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds
+        .toString()
+        .padStart(2, "0")}`;
+    }
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  }
+
   return (
     <ScrollView
       style={styles.container}
@@ -104,8 +117,16 @@ export default function HistoryScreen() {
                 }
               >
                 <View>
+                  {workout.name && (
+                    <Text style={styles.workoutName}>{workout.name}</Text>
+                  )}
+
                   <Text style={styles.date}>
                     {new Date(workout.date).toLocaleDateString()}
+                  </Text>
+
+                  <Text style={styles.duration}>
+                    Duration: {formatDuration(workout.duration ?? 0)}
                   </Text>
 
                   <Text style={styles.volume}>
@@ -182,9 +203,8 @@ const styles = StyleSheet.create({
   },
 
   date: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
+    color: "#aaa",
+    fontSize: 14,
   },
 
   volume: {
@@ -241,5 +261,17 @@ const styles = StyleSheet.create({
   emptyText: {
     color: "#aaa",
     fontSize: 16,
+  },
+  workoutName: {
+    color: "white",
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+
+  duration: {
+    color: "#aaa",
+    fontSize: 14,
+    marginTop: 4,
   },
 });
