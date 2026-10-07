@@ -14,25 +14,12 @@ export default function RootLayout() {
       }}
     >
       <Stack.Screen
-        name="index"
+        name="(tabs)"
         options={{
-          title: "Gym Rivals",
           headerShown: false,
         }}
       />
 
-      <Stack.Screen
-        name="workout"
-        options={{
-          title: "Workout",
-        }}
-      />
-      <Stack.Screen
-        name="history"
-        options={{
-          title: "Workout History",
-        }}
-      />
       <Stack.Screen
         name="exercise-picker"
         options={{

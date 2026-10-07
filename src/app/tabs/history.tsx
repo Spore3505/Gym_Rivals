@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 
-import { Workout } from "../types/Workout";
+import { Workout } from "../../types/Workout";
 
 export default function HistoryScreen() {
   const [workoutHistory, setWorkoutHistory] = useState<Workout[]>([]);

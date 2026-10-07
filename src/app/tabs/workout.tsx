@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { router, useFocusEffect } from "expo-router";
+import { router, useFocusEffect, type Href } from "expo-router";
 
 import {
   Alert,
@@ -14,15 +14,12 @@ import {
   View,
 } from "react-native";
 
-import NumberPickerModal from "../components/NumberPickerModal";
+import NumberPickerModal from "../../components/NumberPickerModal";
+import SetCard from "../../components/SetCard";
 
-import SetCard from "../components/SetCard";
-
-import { Workout } from "../types/Workout";
-
-import { WorkoutExercise } from "../types/WorkoutExercise";
-
-import { WorkoutSet } from "../types/WorkoutSet";
+import { Workout } from "../../types/Workout";
+import { WorkoutExercise } from "../../types/WorkoutExercise";
+import { WorkoutSet } from "../../types/WorkoutSet";
 
 export default function WorkoutScreen() {
   const [weight, setWeight] = useState("185");
@@ -358,7 +355,7 @@ export default function WorkoutScreen() {
     setElapsedSeconds(0);
     setWorkoutName("");
 
-    router.replace("/");
+    router.replace("/" as Href);
   }
 
   function finishWorkout() {
