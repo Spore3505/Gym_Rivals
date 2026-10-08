@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, type Href } from "expo-router";
-
 import {
   Alert,
   Pressable,
@@ -13,6 +13,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import NumberPickerModal from "../../components/NumberPickerModal";
 import SetCard from "../../components/SetCard";
@@ -41,6 +42,7 @@ export default function WorkoutScreen() {
   const [workoutStartTime, setWorkoutStartTime] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [workoutName, setWorkoutName] = useState("");
+  const [workoutStarted, setWorkoutStarted] = useState(false);
 
   const [editingExerciseName, setEditingExerciseName] = useState<string | null>(
     null,
@@ -83,23 +85,16 @@ export default function WorkoutScreen() {
 
   useEffect(() => {
     async function loadStartTime() {
-      const savedStarttime = await AsyncStorage.getItem(
+      const savedStartTime = await AsyncStorage.getItem(
         "currentWorkoutStartTime",
       );
 
-      if (savedStarttime !== null) {
-        setWorkoutStartTime(Number(savedStarttime));
-      } else {
-        const startTime = Date.now();
-
-        setWorkoutStartTime(startTime);
-
-        await AsyncStorage.setItem(
-          "currentWorkoutStartTime",
-          startTime.toString(),
-        );
+      if (savedStartTime !== null) {
+        setWorkoutStartTime(Number(savedStartTime));
+        setWorkoutStarted(true);
       }
     }
+
     loadStartTime();
   }, []);
 
@@ -350,6 +345,7 @@ export default function WorkoutScreen() {
     setExpandedExercise(null);
 
     setExercise("");
+    setWorkoutStarted(false);
 
     setWorkoutStartTime(null);
     setElapsedSeconds(0);
@@ -428,157 +424,189 @@ export default function WorkoutScreen() {
     await AsyncStorage.setItem("currentWorkoutName", name);
   }
 
-  return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-    >
-      <Pressable
-        style={styles.addExerciseButton}
-        onPress={() => router.push("/exercise-picker")}
-      >
-        <Text style={styles.addExerciseButtonText}>Add Exercise</Text>
-      </Pressable>
+  async function startWorkout() {
+    const startTime = Date.now();
 
-      {workoutStartTime !== null && (
-        <View style={styles.workoutTimer}>
-          <Text style={styles.timerLabel}>
-            Started{" "}
-            {new Date(workoutStartTime).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </Text>
-          <Text style={styles.timerText}>{formatDuration(elapsedSeconds)}</Text>
-        </View>
-      )}
+    setWorkoutStartTime(startTime);
+    setWorkoutStarted(true);
+    setElapsedSeconds(0);
 
-      <Text style={styles.label}>Workout Name</Text>
-      <TextInput
-        style={styles.workoutNameInput}
-        placeholder="e.g Push Day"
-        placeholderTextColor="#777"
-        value={workoutName}
-        onChangeText={updateWorkoutName}
-      ></TextInput>
+    await AsyncStorage.setItem(
+      "currentWorkoutStartTime",
+      startTime.toString(),
+    );
+  }
+  if (!workoutStarted) {
+    return (
+      <SafeAreaView style={styles.emptyWorkout} edges={["top"]}>
+        <Text style={styles.emptyWorkoutTitle}>Workout</Text>
 
-      <Text style={styles.title}>{exercise || "Choose an Exercise"}</Text>
-
-      <Text style={styles.label}>Weight</Text>
-
-      <Pressable
-        style={styles.valueButton}
-        onPress={() => setShowWeightPicker(true)}
-      >
-        <Text style={styles.valueText}>{weight} lb</Text>
-      </Pressable>
-
-      <Text style={styles.label}>Reps</Text>
-
-      <Pressable
-        style={styles.valueButton}
-        onPress={() => setShowRepsPicker(true)}
-      >
-        <Text style={styles.valueText}>{reps}</Text>
-      </Pressable>
-
-      <Pressable style={styles.addButton} onPress={addSet}>
-        <Text style={styles.addButtonText}>
-          {editingSetId !== null ? "Update Set" : "Add Set"}
+        <Text style={styles.emptyWorkoutText}>
+          No workout in progress
         </Text>
-      </Pressable>
 
-      <Text style={styles.volume}>
-        {exercise ? `${exercise} Volume: ${exerciseVolume} lb` : ""}
-      </Text>
+        <Pressable style={styles.startWorkoutButton} onPress={startWorkout}>
+          <Ionicons name="add" size={24} color="#111" />
+          <Text style={styles.startWorkoutButtonText}>Start Workout</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
+  
 
-      <Text style={styles.volume}>Workout Volume: {totalWorkoutVolume} lb</Text>
+  return (
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+      >
+        <Pressable
+          style={styles.addExerciseButton}
+          onPress={() => router.push("/exercise-picker")}
+        >
+          <Text style={styles.addExerciseButtonText}>Add Exercise</Text>
+        </Pressable>
 
-      <Pressable style={styles.finishButton} onPress={finishWorkout}>
-        <Text style={styles.finishButtonText}>Finish Workout</Text>
-      </Pressable>
-
-      {workoutExercises.map((workoutExercise) => {
-        const isExpanded = expandedExercise === workoutExercise.name;
-
-        return (
-          <View key={workoutExercise.name} style={styles.exerciseCard}>
-            <Pressable
-              style={styles.exerciseHeader}
-              onPress={() => {
-                setExpandedExercise(isExpanded ? null : workoutExercise.name);
-
-                setExercise(workoutExercise.name);
-                setEditingSetId(null);
-                setEditingExerciseName(null);
-              }}
-            >
-              <Text style={styles.exerciseTitle}>{workoutExercise.name}</Text>
-
-              <Text style={styles.dropdownArrow}>{isExpanded ? "▲" : "▼"}</Text>
-            </Pressable>
-
-            {isExpanded && (
-              <View style={styles.exerciseDetails}>
-                {workoutExercise.sets.map((set, index) => (
-                  <SetCard
-                    key={set.id}
-                    set={set}
-                    index={index}
-                    onEdit={() => editSet(set, workoutExercise.name)}
-                    onDelete={() => deleteSet(set.id, workoutExercise.name)}
-                  />
-                ))}
-
-                <Pressable
-                  style={styles.removeExerciseButton}
-                  onPress={() => {
-                    Alert.alert(
-                      "Remove Exercise?",
-                      `Remove ${workoutExercise.name} from this workout?`,
-                      [
-                        {
-                          text: "Cancel",
-                          style: "cancel",
-                        },
-                        {
-                          text: "Remove",
-                          style: "destructive",
-                          onPress: () => removeExercise(workoutExercise.name),
-                        },
-                      ],
-                    );
-                  }}
-                >
-                  <Text style={styles.removeExerciseButtonText}>
-                    Remove Exercise
-                  </Text>
-                </Pressable>
-              </View>
-            )}
+        {workoutStartTime !== null && (
+          <View style={styles.workoutTimer}>
+            <Text style={styles.timerLabel}>
+              Started{" "}
+              {new Date(workoutStartTime).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </Text>
+            <Text style={styles.timerText}>{formatDuration(elapsedSeconds)}</Text>
           </View>
-        );
-      })}
+        )}
 
-      <NumberPickerModal
-        visible={showWeightPicker}
-        title="Choose Weight"
-        value={weight}
-        values={weightValues}
-        suffix=" lb"
-        onChange={setWeight}
-        onClose={() => setShowWeightPicker(false)}
-      />
+        <Text style={styles.label}>Workout Name</Text>
+        <TextInput
+          style={styles.workoutNameInput}
+          placeholder="e.g Push Day"
+          placeholderTextColor="#777"
+          value={workoutName}
+          onChangeText={updateWorkoutName}
+        ></TextInput>
 
-      <NumberPickerModal
-        visible={showRepsPicker}
-        title="Choose Reps"
-        value={reps}
-        values={repValues}
-        onChange={setReps}
-        onClose={() => setShowRepsPicker(false)}
-      />
-    </ScrollView>
+        <Text style={styles.title}>{exercise || "Choose an Exercise"}</Text>
+
+        <Text style={styles.label}>Weight</Text>
+
+        <Pressable
+          style={styles.valueButton}
+          onPress={() => setShowWeightPicker(true)}
+        >
+          <Text style={styles.valueText}>{weight} lb</Text>
+        </Pressable>
+
+        <Text style={styles.label}>Reps</Text>
+
+        <Pressable
+          style={styles.valueButton}
+          onPress={() => setShowRepsPicker(true)}
+        >
+          <Text style={styles.valueText}>{reps}</Text>
+        </Pressable>
+
+        <Pressable style={styles.addButton} onPress={addSet}>
+          <Text style={styles.addButtonText}>
+            {editingSetId !== null ? "Update Set" : "Add Set"}
+          </Text>
+        </Pressable>
+
+        <Text style={styles.volume}>
+          {exercise ? `${exercise} Volume: ${exerciseVolume} lb` : ""}
+        </Text>
+
+        <Text style={styles.volume}>Workout Volume: {totalWorkoutVolume} lb</Text>
+
+        <Pressable style={styles.finishButton} onPress={finishWorkout}>
+          <Text style={styles.finishButtonText}>Finish Workout</Text>
+        </Pressable>
+
+        {workoutExercises.map((workoutExercise) => {
+          const isExpanded = expandedExercise === workoutExercise.name;
+
+          return (
+            <View key={workoutExercise.name} style={styles.exerciseCard}>
+              <Pressable
+                style={styles.exerciseHeader}
+                onPress={() => {
+                  setExpandedExercise(isExpanded ? null : workoutExercise.name);
+
+                  setExercise(workoutExercise.name);
+                  setEditingSetId(null);
+                  setEditingExerciseName(null);
+                }}
+              >
+                <Text style={styles.exerciseTitle}>{workoutExercise.name}</Text>
+
+                <Text style={styles.dropdownArrow}>{isExpanded ? "▲" : "▼"}</Text>
+              </Pressable>
+
+              {isExpanded && (
+                <View style={styles.exerciseDetails}>
+                  {workoutExercise.sets.map((set, index) => (
+                    <SetCard
+                      key={set.id}
+                      set={set}
+                      index={index}
+                      onEdit={() => editSet(set, workoutExercise.name)}
+                      onDelete={() => deleteSet(set.id, workoutExercise.name)}
+                    />
+                  ))}
+
+                  <Pressable
+                    style={styles.removeExerciseButton}
+                    onPress={() => {
+                      Alert.alert(
+                        "Remove Exercise?",
+                        `Remove ${workoutExercise.name} from this workout?`,
+                        [
+                          {
+                            text: "Cancel",
+                            style: "cancel",
+                          },
+                          {
+                            text: "Remove",
+                            style: "destructive",
+                            onPress: () => removeExercise(workoutExercise.name),
+                          },
+                        ],
+                      );
+                    }}
+                  >
+                    <Text style={styles.removeExerciseButtonText}>
+                      Remove Exercise
+                    </Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
+          );
+        })}
+
+        <NumberPickerModal
+          visible={showWeightPicker}
+          title="Choose Weight"
+          value={weight}
+          values={weightValues}
+          suffix=" lb"
+          onChange={setWeight}
+          onClose={() => setShowWeightPicker(false)}
+        />
+
+        <NumberPickerModal
+          visible={showRepsPicker}
+          title="Choose Reps"
+          value={reps}
+          values={repValues}
+          onChange={setReps}
+          onClose={() => setShowRepsPicker(false)}
+        />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -775,4 +803,42 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 20,
   },
+  safeArea: {
+  flex: 1,
+  backgroundColor: "#111",
+},
+emptyWorkout: {
+  flex: 1,
+  backgroundColor: "#111",
+  padding: 24,
+},
+
+emptyWorkoutTitle: {
+  color: "white",
+  fontSize: 32,
+  fontWeight: "bold",
+},
+
+emptyWorkoutText: {
+  color: "#888",
+  fontSize: 16,
+  marginTop: 12,
+  marginBottom: 30,
+},
+
+startWorkoutButton: {
+  backgroundColor: "white",
+  padding: 16,
+  borderRadius: 12,
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+},
+
+startWorkoutButtonText: {
+  color: "#111",
+  fontSize: 17,
+  fontWeight: "bold",
+},
 });

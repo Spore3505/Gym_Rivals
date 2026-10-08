@@ -1,12 +1,24 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Gym Rivals</Text>
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.title}>Gym Rivals</Text>
+          <Text style={styles.subtitle}>Welcome back!</Text>
+        </View>
 
-      <Text style={styles.subtitle}>Welcome back!</Text>
+      <Pressable
+        style={styles.profileButton}
+        onPress={() => router.push("/profile")}
+      >
+        <Ionicons name="person-circle-outline" size={38} color="white" />
+      </Pressable>
+    </View>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Weekly Rank</Text>
@@ -17,18 +29,7 @@ export default function HomeScreen() {
         <Text style={styles.cardTitle}>Current Streak</Text>
         <Text style={styles.streak}>🔥 3 days</Text>
       </View>
-
-      <Pressable style={styles.button} onPress={() => router.push("/workout")}>
-        <Text style={styles.buttonText}>Start Workout</Text>
-      </Pressable>
-
-      <Pressable
-        style={styles.historyButton}
-        onPress={() => router.push("/history")}
-      >
-        <Text style={styles.historyButtonText}>Workout History</Text>
-      </Pressable>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -36,7 +37,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    paddingTop: 70,
     backgroundColor: "#111",
   },
 
@@ -104,4 +104,14 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 17,
   },
+  header: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  marginBottom: 30,
+},
+
+profileButton: {
+  padding: 4,
+},
 });

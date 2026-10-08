@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -85,89 +86,91 @@ export default function HistoryScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-    >
-      <Text style={styles.title}>Workout History</Text>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+      >
+        <Text style={styles.title}>Workout History</Text>
 
-      {workoutHistory.length === 0 ? (
-        <Text style={styles.emptyText}>No completed workouts yet.</Text>
-      ) : (
-        workoutHistory.map((workout) => {
-          const isExpanded = expandedWorkoutId === workout.id;
+        {workoutHistory.length === 0 ? (
+          <Text style={styles.emptyText}>No completed workouts yet.</Text>
+        ) : (
+          workoutHistory.map((workout) => {
+            const isExpanded = expandedWorkoutId === workout.id;
 
-          const totalVolume = workout.exercises.reduce(
-            (workoutTotal, exercise) => {
-              const exerciseVolume = exercise.sets.reduce((setTotal, set) => {
-                return setTotal + Number(set.weight) * Number(set.reps);
-              }, 0);
+            const totalVolume = workout.exercises.reduce(
+              (workoutTotal, exercise) => {
+                const exerciseVolume = exercise.sets.reduce((setTotal, set) => {
+                  return setTotal + Number(set.weight) * Number(set.reps);
+                }, 0);
 
-              return workoutTotal + exerciseVolume;
-            },
-            0,
-          );
+                return workoutTotal + exerciseVolume;
+              },
+              0,
+            );
 
-          return (
-            <View key={workout.id} style={styles.workoutCard}>
-              <Pressable
-                style={styles.workoutHeader}
-                onPress={() =>
-                  setExpandedWorkoutId(isExpanded ? null : workout.id)
-                }
-              >
-                <View>
-                  {workout.name && (
-                    <Text style={styles.workoutName}>{workout.name}</Text>
-                  )}
+            return (
+              <View key={workout.id} style={styles.workoutCard}>
+                <Pressable
+                  style={styles.workoutHeader}
+                  onPress={() =>
+                    setExpandedWorkoutId(isExpanded ? null : workout.id)
+                  }
+                >
+                  <View>
+                    {workout.name && (
+                      <Text style={styles.workoutName}>{workout.name}</Text>
+                    )}
 
-                  <Text style={styles.date}>
-                    {new Date(workout.date).toLocaleDateString()}
-                  </Text>
+                    <Text style={styles.date}>
+                      {new Date(workout.date).toLocaleDateString()}
+                    </Text>
 
-                  <Text style={styles.duration}>
-                    Duration: {formatDuration(workout.duration ?? 0)}
-                  </Text>
+                    <Text style={styles.duration}>
+                      Duration: {formatDuration(workout.duration ?? 0)}
+                    </Text>
 
-                  <Text style={styles.volume}>
-                    Total Volume: {totalVolume} lb
-                  </Text>
-                </View>
+                    <Text style={styles.volume}>
+                      Total Volume: {totalVolume} lb
+                    </Text>
+                  </View>
 
-                <Text style={styles.arrow}>{isExpanded ? "▲" : "▼"}</Text>
-              </Pressable>
+                  <Text style={styles.arrow}>{isExpanded ? "▲" : "▼"}</Text>
+                </Pressable>
 
-              {isExpanded && (
-                <View style={styles.workoutDetails}>
-                  {workout.exercises.map((exercise) => (
-                    <View key={exercise.name} style={styles.exerciseSection}>
-                      <Text style={styles.exerciseName}>{exercise.name}</Text>
+                {isExpanded && (
+                  <View style={styles.workoutDetails}>
+                    {workout.exercises.map((exercise) => (
+                      <View key={exercise.name} style={styles.exerciseSection}>
+                        <Text style={styles.exerciseName}>{exercise.name}</Text>
 
-                      {exercise.sets.map((set, index) => (
-                        <View key={set.id} style={styles.setRow}>
-                          <Text style={styles.setText}>Set {index + 1}</Text>
+                        {exercise.sets.map((set, index) => (
+                          <View key={set.id} style={styles.setRow}>
+                            <Text style={styles.setText}>Set {index + 1}</Text>
 
-                          <Text style={styles.setText}>
-                            {set.weight} lb × {set.reps}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  ))}
+                            <Text style={styles.setText}>
+                              {set.weight} lb × {set.reps}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    ))}
 
-                  <Pressable
-                    style={styles.deleteButton}
-                    onPress={() => confirmDeleteWorkout(workout.id)}
-                  >
-                    <Text style={styles.deleteButtonText}>Delete Workout</Text>
-                  </Pressable>
-                </View>
-              )}
-            </View>
-          );
-        })
-      )}
-    </ScrollView>
+                    <Pressable
+                      style={styles.deleteButton}
+                      onPress={() => confirmDeleteWorkout(workout.id)}
+                    >
+                      <Text style={styles.deleteButtonText}>Delete Workout</Text>
+                    </Pressable>
+                  </View>
+                )}
+              </View>
+            );
+          })
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -273,5 +276,9 @@ const styles = StyleSheet.create({
     color: "#aaa",
     fontSize: 14,
     marginTop: 4,
+  },
+  safeArea: {
+  flex: 1,
+  backgroundColor: "#111",
   },
 });

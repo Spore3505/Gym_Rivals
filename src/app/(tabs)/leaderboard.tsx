@@ -1,11 +1,12 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LeaderboardScreen() {
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <Text style={styles.title}>Leaderboard</Text>
       <Text style={styles.text}>Leaderboard coming soon.</Text>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -14,7 +15,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#111",
     padding: 24,
-    paddingTop: 70,
   },
 
   title: {

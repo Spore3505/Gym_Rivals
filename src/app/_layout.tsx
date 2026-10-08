@@ -26,6 +26,12 @@ export default function RootLayout() {
           title: "Choose Exercise",
         }}
       />
+      <Stack.Screen
+        name="profile"
+        options={{
+        title: "Profile",
+        }}
+      />
     </Stack>
   );
 }
