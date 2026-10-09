@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   StyleSheet,
@@ -20,6 +21,10 @@ export default function ExercisePickerScreen() {
   const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { source, workoutId } = useLocalSearchParams<{
+    source?: string;
+    workoutId?: string;
+  }>();
 
   useEffect(() => {
     async function loadExercises() {
@@ -43,10 +48,27 @@ export default function ExercisePickerScreen() {
   );
 
   async function selectExercise(exercise: Exercise) {
-    await AsyncStorage.setItem("selectedExercise", exercise.name);
+    try {
+      if (source === "history" && workoutId) {
+        await AsyncStorage.setItem(
+          "pendingHistoryExercise",
+          JSON.stringify({
+            workoutId,
+            exerciseName: exercise.name,
+          }),
+        );
+      } else {
+        await AsyncStorage.setItem(
+          "selectedExercise",
+          exercise.name,
+        );
+      }
 
-    router.back();
-  }
+      router.back();
+    } catch (error) {
+      Alert.alert("Error", "Could not select the exercise.");
+    }
+}
 
   if (loading) {
     return (

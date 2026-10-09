@@ -1,5 +1,5 @@
 
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -47,11 +47,70 @@ export default function HistoryScreen() {
 
       async function loadWorkoutHistory() {
         try {
-          const savedHistory = await AsyncStorage.getItem("workoutHistory");
+          const savedHistory =
+            await AsyncStorage.getItem("workoutHistory");
 
-          const parsedHistory: Workout[] = savedHistory
+          let parsedHistory: Workout[] = savedHistory
             ? JSON.parse(savedHistory)
             : [];
+
+          const pending =
+            await AsyncStorage.getItem("pendingHistoryExercise");
+
+          if (pending) {
+            const selection: {
+              workoutId: string;
+              exerciseName: string;
+            } = JSON.parse(pending);
+
+            const targetWorkout = parsedHistory.find(
+              (workout) => workout.id === selection.workoutId,
+            );
+
+            if (targetWorkout) {
+              const alreadyExists = targetWorkout.exercises.some(
+                (exercise) => exercise.name === selection.exerciseName,
+              );
+
+              if (!alreadyExists) {
+                parsedHistory = parsedHistory.map((workout) =>
+                  workout.id === selection.workoutId
+                    ? {
+                        ...workout,
+                        exercises: [
+                          ...workout.exercises,
+                          {
+                            name: selection.exerciseName,
+                            sets: [],
+                          },
+                        ],
+                      }
+                    : workout,
+                );
+
+                await AsyncStorage.setItem(
+                  "workoutHistory",
+                  JSON.stringify(parsedHistory),
+                );
+              }
+
+              if (active) {
+                setExpandedWorkoutId(selection.workoutId);
+
+                setSetEditor({
+                  mode: "add",
+                  workoutId: selection.workoutId,
+                  exerciseName: selection.exerciseName,
+                  weight: "185",
+                  reps: "8",
+                });
+              }
+            }
+
+            await AsyncStorage.removeItem(
+              "pendingHistoryExercise",
+            );
+          }
 
           const sortedHistory = [...parsedHistory].sort(
             (a, b) =>
@@ -64,7 +123,10 @@ export default function HistoryScreen() {
           }
         } catch (error) {
           if (active) {
-            Alert.alert("Error", "Could not load workout history.");
+            Alert.alert(
+              "Error",
+              "Could not load workout history.",
+            );
           }
         }
       }
@@ -690,6 +752,25 @@ export default function HistoryScreen() {
                       </Text>
                     )}
 
+                    <Pressable
+                      style={styles.addExerciseButton}
+                      onPress={() => {
+                        setSetEditor(null);
+
+                        router.push({
+                          pathname: "/exercise-picker",
+                          params: {
+                            source: "history",
+                            workoutId: workout.id,
+                          },
+                        });
+                      }}
+                    >
+                      <Text style={styles.addExerciseButtonText}>
+                        + Add Exercise
+                      </Text>
+                    </Pressable>
+
                     {/* DELETE WORKOUT */}
 
                     <Pressable
@@ -965,4 +1046,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 10,
   },
+  addExerciseButton: {
+  backgroundColor: "#333",
+  padding: 14,
+  borderRadius: 10,
+  alignItems: "center",
+  marginTop: 16,
+},
+
+addExerciseButtonText: {
+  color: "white",
+  fontWeight: "bold",
+  fontSize: 16,
+},
 });
