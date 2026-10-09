@@ -386,6 +386,59 @@ export default function WorkoutScreen() {
     );
   }
 
+  
+  async function cancelWorkout() {
+    try {
+      await AsyncStorage.multiRemove([
+        "currentWorkout",
+        "currentWorkoutName",
+        "currentWorkoutStartTime",
+        "selectedExercise",
+      ]);
+
+      setWorkoutExercises([]);
+      setWorkoutName("");
+      setWorkoutStartTime(null);
+      setElapsedSeconds(0);
+      setWorkoutStarted(false);
+
+      setExercise("");
+      setEditingSetId(null);
+      setEditingExerciseName(null);
+      setExpandedExercise(null);
+
+      setWeight("185");
+      setReps("8");
+      setShowWeightPicker(false);
+      setShowRepsPicker(false);
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        "Could not cancel the workout. Please try again."
+      );
+    }
+  }
+
+  
+  function confirmCancelWorkout() {
+    Alert.alert(
+      "Cancel Workout?",
+      "Are you sure? Your current workout will be discarded and will not be saved to history.",
+      [
+        {
+          text: "Keep Workout",
+          style: "cancel",
+        },
+        {
+          text: "Discard Workout",
+          style: "destructive",
+          onPress: cancelWorkout,
+        },
+      ],
+    );
+  }
+
+
   const exerciseVolume = sets.reduce((total, set) => {
     return total + Number(set.weight) * Number(set.reps);
   }, 0);
@@ -524,6 +577,16 @@ export default function WorkoutScreen() {
         <Pressable style={styles.finishButton} onPress={finishWorkout}>
           <Text style={styles.finishButtonText}>Finish Workout</Text>
         </Pressable>
+
+        <Pressable
+          style={styles.cancelWorkoutButton}
+          onPress={confirmCancelWorkout}
+        >
+          <Text style={styles.cancelWorkoutButtonText}>
+            Cancel Workout
+          </Text>
+        </Pressable>
+
 
         {workoutExercises.map((workoutExercise) => {
           const isExpanded = expandedExercise === workoutExercise.name;
@@ -841,4 +904,22 @@ startWorkoutButtonText: {
   fontSize: 17,
   fontWeight: "bold",
 },
+
+cancelWorkoutButton: {
+  backgroundColor: "#2A1515",
+  borderWidth: 1,
+  borderColor: "#D9534F",
+  padding: 15,
+  borderRadius: 12,
+  alignItems: "center",
+  marginTop: 10,
+  marginBottom: 15,
+},
+
+cancelWorkoutButtonText: {
+  color: "#FF6B6B",
+  fontSize: 16,
+  fontWeight: "bold",
+},
+
 });

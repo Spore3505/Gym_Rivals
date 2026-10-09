@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -19,7 +20,8 @@ export default function HistoryScreen() {
     null,
   );
 
-  useEffect(() => {
+  useFocusEffect(
+  useCallback(() => {
     async function loadWorkoutHistory() {
       const savedHistory = await AsyncStorage.getItem("workoutHistory");
 
@@ -31,11 +33,14 @@ export default function HistoryScreen() {
         );
 
         setWorkoutHistory(sortedHistory);
+      } else {
+        setWorkoutHistory([]);
       }
     }
 
     loadWorkoutHistory();
-  }, []);
+  }, []),
+  );
 
   async function deleteWorkout(workoutId: string) {
     const updatedHistory = workoutHistory.filter(
