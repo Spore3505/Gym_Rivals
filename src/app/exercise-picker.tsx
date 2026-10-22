@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useLocalSearchParams } from "expo-router";
@@ -26,22 +26,29 @@ export default function ExercisePickerScreen() {
     workoutId?: string;
   }>();
 
-  useEffect(() => {
-    async function loadExercises() {
-      try {
-        const data = await getExercises();
-
+  const loadExercises = useCallback(() => {
+    return getExercises()
+      .then((data) => {
         setExercises(data);
-      } catch (error) {
+      })
+      .catch((error) => {
         console.log(error);
         setError("Could not load exercises.");
-      } finally {
+      })
+      .finally(() => {
         setLoading(false);
-      }
-    }
-
-    loadExercises();
+      });
   }, []);
+
+  useEffect(() => {
+    void loadExercises();
+  }, [loadExercises]);
+
+  function retryExercises() {
+    setLoading(true);
+    setError("");
+    void loadExercises();
+  }
 
   const filteredExercises = exercises.filter((exercise) =>
     exercise.name.toLowerCase().includes(searchText.toLowerCase()),
@@ -84,6 +91,13 @@ export default function ExercisePickerScreen() {
     return (
       <View style={styles.centerContainer}>
         <Text style={styles.errorText}>{error}</Text>
+        <Pressable
+          accessibilityRole="button"
+          style={styles.retryButton}
+          onPress={retryExercises}
+        >
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </Pressable>
       </View>
     );
   }
@@ -102,6 +116,13 @@ export default function ExercisePickerScreen() {
         data={filteredExercises}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
+        ListEmptyComponent={
+          searchText.length > 0 ? (
+            <Text style={styles.emptyText}>
+              No exercises found. Try another search.
+            </Text>
+          ) : null
+        }
         renderItem={({ item }) => (
           <Pressable
             style={styles.exerciseCard}
@@ -182,5 +203,26 @@ const styles = StyleSheet.create({
   errorText: {
     color: "#ff6b6b",
     fontSize: 16,
+  },
+
+  retryButton: {
+    backgroundColor: "#fff",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 10,
+    marginTop: 16,
+  },
+
+  retryButtonText: {
+    color: "#111",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+
+  emptyText: {
+    color: "#aaa",
+    fontSize: 16,
+    textAlign: "center",
+    marginTop: 24,
   },
 });
