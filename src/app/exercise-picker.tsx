@@ -26,17 +26,18 @@ export default function ExercisePickerScreen() {
     workoutId?: string;
   }>();
 
-  const loadExercises = useCallback(async () => {
-    try {
-      const data = await getExercises();
-
-      setExercises(data);
-    } catch (error) {
-      console.log(error);
-      setError("Could not load exercises.");
-    } finally {
-      setLoading(false);
-    }
+  const loadExercises = useCallback(() => {
+    return getExercises()
+      .then((data) => {
+        setExercises(data);
+      })
+      .catch((error) => {
+        console.log(error);
+        setError("Could not load exercises.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
   useEffect(() => {
